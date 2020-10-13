@@ -79,9 +79,10 @@ class CPU:
         running = True
 
         while running:
-            instruction_register = self.ram[self.program_counter]
+            instruction_register = self.ram_read(self.program_counter)
             operand_a = self.ram_read(self.program_counter + 1)
             operand_b = self.ram_read(self.program_counter + 2)
+
             # HLT (halt the CPU and exit the emulator)
             if instruction_register == HLT:
                 running = False
