@@ -2,6 +2,10 @@
 
 import sys
 
+HLT = 0b00000001
+LDI = 0b10000010
+PRN = 0b01000111
+
 
 class CPU:
     """Main CPU class."""
@@ -9,8 +13,8 @@ class CPU:
     def __init__(self):
         """Construct a new CPU."""
         self.ram = [0] * 256
-        self.registers = [0] * 8
-        self.pc = 0
+        self.register = [0] * 8
+        self.program_counter = 0
 
     def ram_read(self, memory_address_register):
         memory_data_register = self.ram[memory_address_register]
@@ -44,7 +48,7 @@ class CPU:
         """ALU operations."""
 
         if op == "ADD":
-            self.reg[reg_a] += self.reg[reg_b]
+            self.register[reg_a] += self.register[reg_b]
         # elif op == "SUB": etc
         else:
             raise Exception("Unsupported ALU operation")
@@ -56,19 +60,37 @@ class CPU:
         """
 
         print(f"TRACE: %02X | %02X %02X %02X |" % (
-            self.pc,
+            self.program_counter,
             # self.fl,
             # self.ie,
-            self.ram_read(self.pc),
-            self.ram_read(self.pc + 1),
-            self.ram_read(self.pc + 2)
+            self.ram_read(self.program_counter),
+            self.ram_read(self.program_counter + 1),
+            self.ram_read(self.program_counter + 2)
         ), end='')
 
         for i in range(8):
-            print(" %02X" % self.reg[i], end='')
+            print(" %02X" % self.register[i], end='')
 
         print()
 
     def run(self):
         """Run the CPU."""
-        pass
+
+        running = True
+
+        while running:
+            instruction_register = self.ram[self.program_counter]
+            operand_a = self.ram_read(self.program_counter + 1)
+            operand_b = self.ram_read(self.program_counter + 2)
+            # HLT (halt the CPU and exit the emulator)
+            if instruction_register == HLT:
+                running = False
+                self.program_counter += 1
+            # LDI (set the value of a register to an integer)
+            elif instruction_register == LDI:
+                self.register[operand_a] = operand_b
+                self.program_counter += 3
+            # PRN (print numeric value stored in the given register)
+            elif instruction_register == PRN:
+                print(self.register[operand_a])
+                self.program_counter += 2
