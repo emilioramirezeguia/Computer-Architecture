@@ -5,6 +5,7 @@ import sys
 HLT = 0b00000001
 LDI = 0b10000010
 PRN = 0b01000111
+MUL = 0b10100010
 
 
 class CPU:
@@ -77,6 +78,8 @@ class CPU:
         if op == "ADD":
             self.register[reg_a] += self.register[reg_b]
         # elif op == "SUB": etc
+        elif op == MUL:
+            self.register[reg_a] *= self.register[reg_b]
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -122,6 +125,12 @@ class CPU:
             elif instruction_register == PRN:
                 print(self.register[operand_a])
                 self.program_counter += 2
+            # MUL (multiply the values in two registers together and store the result in registerA)
+            elif instruction_register == MUL:
+                self.alu(MUL, operand_a, operand_b)
+                self.program_counter += 3
             else:
                 print(f"Unkown instruction: {instruction_register}")
                 sys.exit(1)
+
+        print("Register: ", self.register)
