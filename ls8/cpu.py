@@ -6,6 +6,8 @@ HLT = 0b00000001  # 1
 LDI = 0b10000010  # 130
 PRN = 0b01000111  # 71
 MUL = 0b10100010  # 162
+PUSH = 0b01000101  # 69
+POP = 0b01000110  # 70
 
 
 class CPU:
@@ -16,12 +18,16 @@ class CPU:
         self.ram = [0] * 256
         self.register = [0] * 8
         self.program_counter = 0
+        self.stack_pointer = 7
+        self.register[self.stack_pointer] = 0xf4
         self.running = False
         self.dispatch_table = {}
         self.dispatch_table[HLT] = self.handle_hlt
         self.dispatch_table[LDI] = self.handle_ldi
         self.dispatch_table[PRN] = self.handle_prn
         self.dispatch_table[MUL] = self.handle_mul
+        self.dispatch_table[PUSH] = self.handle_push
+        self.dispatch_table[POP] = self.handle_pop
 
     def ram_read(self, memory_address_register):
         memory_data_register = self.ram[memory_address_register]
@@ -67,7 +73,8 @@ class CPU:
 
         if op == "ADD":
             self.register[reg_a] += self.register[reg_b]
-        # elif op == "SUB": etc
+        elif op == "SUB":
+            self.register[reg_a] -= self.register[reg_b]
         elif op == "MUL":
             self.register[reg_a] *= self.register[reg_b]
         else:
@@ -93,17 +100,44 @@ class CPU:
 
         print()
 
+    # HLT (halt the CPU and exit the emulator)
     def handle_hlt(self, a, b):
         self.running = False
 
+    # LDI (set the value of a register to an integer)
     def handle_ldi(self, a, b):
         self.register[a] = b
 
+    # PRN (print numeric value stored in the given register)
     def handle_prn(self, a, b):
         print(self.register[a])
 
+    # MUL (multiply the values in two registers together and store the result in registerA)
     def handle_mul(self, a, b):
         self.alu("MUL", a, b)
+
+    # PUSH (push the value in the given register on the stack.)
+    def handle_push(self, a, b):
+        # decrement the stack pointer
+        self.register[self.stack_pointer] -= 1
+
+        # grab the value out of the given register
+        value = self.register[a]  # => this is the value we want to push
+
+        # copy the value onto the stack
+        top_of_the_stack_address = self.register[self.stack_pointer]
+        self.ram[top_of_the_stack_address] = value
+
+    # POP (pop the value at the top of the stack into the given register)
+    def handle_pop(self, a, b):
+        # grab the value from the top of the stack
+        top_of_the_stack_address = self.register[self.stack_pointer]
+
+        # store the value in the register
+        self.register[a] = top_of_the_stack_address
+
+        # increment the stack pointer
+        self.register[self.stack_pointer] += 1
 
     def run(self):
         """Run the CPU."""
@@ -124,22 +158,3 @@ class CPU:
             instruction_length = ((instruction_register & 0b11000000) >> 6) + 1
             # this also works => instruction_length = (instruction_register >> 6) + 1
             self.program_counter += instruction_length
-
-            # # HLT (halt the CPU and exit the emulator)
-            # if instruction_register == HLT:
-            #     running = False
-
-            # # LDI (set the value of a register to an integer)
-            # if instruction_register == LDI:
-            #     self.dispatch_table[LDI](operand_a, operand_b)
-
-            # # PRN (print numeric value stored in the given register)
-            # if instruction_register == PRN:
-            #     self.dispatch_table[PRN](operand_a)
-
-            # # MUL (multiply the values in two registers together and store the result in registerA)
-            # if instruction_register == MUL:
-            #     self.dispatch_table[MUL](operand_a, operand_b)
-
-            # print(f"Unkown instruction: {instruction_register}")
-            # sys.exit(1)
