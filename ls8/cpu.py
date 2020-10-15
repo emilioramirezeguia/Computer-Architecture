@@ -122,7 +122,8 @@ class CPU:
         self.register[self.stack_pointer] -= 1
 
         # grab the value out of the given register
-        value = self.register[a]  # => this is the value we want to push
+        # => this is the value we want to push to the stack
+        value = self.register[a]
 
         # copy the value onto the stack
         top_of_the_stack_address = self.register[self.stack_pointer]
@@ -132,9 +133,11 @@ class CPU:
     def handle_pop(self, a, b):
         # grab the value from the top of the stack
         top_of_the_stack_address = self.register[self.stack_pointer]
+        # => this is the value we want to store in our register
+        value = self.ram[top_of_the_stack_address]
 
         # store the value in the register
-        self.register[a] = top_of_the_stack_address
+        self.register[a] = value
 
         # increment the stack pointer
         self.register[self.stack_pointer] += 1
