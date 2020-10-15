@@ -8,6 +8,8 @@ PRN = 0b01000111  # 71
 MUL = 0b10100010  # 162
 PUSH = 0b01000101  # 69
 POP = 0b01000110  # 70
+CALL = 0b01010000  # 80
+RET = 0b00010001  # 17
 
 
 class CPU:
@@ -28,6 +30,8 @@ class CPU:
         self.dispatch_table[MUL] = self.handle_mul
         self.dispatch_table[PUSH] = self.handle_push
         self.dispatch_table[POP] = self.handle_pop
+        self.dispatch_table[CALL] = self.handle_call
+        self.dispatch_table[RET] = self.handle_ret
 
     def ram_read(self, memory_address_register):
         memory_data_register = self.ram[memory_address_register]
@@ -122,7 +126,6 @@ class CPU:
         self.register[self.stack_pointer] -= 1
 
         # grab the value out of the given register
-        # => this is the value we want to push to the stack
         value = self.register[a]
 
         # copy the value onto the stack
@@ -133,7 +136,6 @@ class CPU:
     def handle_pop(self, a, b):
         # grab the value from the top of the stack
         top_of_the_stack_address = self.register[self.stack_pointer]
-        # => this is the value we want to store in our register
         value = self.ram[top_of_the_stack_address]
 
         # store the value in the register
@@ -141,6 +143,36 @@ class CPU:
 
         # increment the stack pointer
         self.register[self.stack_pointer] += 1
+
+    def handle_call(self, a, b):
+        # get the address of the next instruction after the call
+        return_address = self.program_counter + 2
+
+        # push the address onto the stack
+        self.push_value(return_address)
+
+        # get subroutine address from register
+
+    def handle_ret(self, a, b):
+        pass
+
+    def push_value(self, value):
+        # decrement the stack pointer
+        self.register[self.stack_pointer] -= 1
+
+        # copy the value onto the stack
+        top_of_the_stack_address = self.register[self.stack_pointer]
+        self.ram[top_of_the_stack_address] = value
+
+    def pop_value(self, value):
+        # grab the value from the top of the stack
+        top_of_the_stack_address = self.register[self.stack_pointer]
+        value = self.ram[top_of_the_stack_address]
+
+        # increment the stack pointer
+        self.register[self.stack_pointer] += 1
+
+        return value
 
     def run(self):
         """Run the CPU."""
@@ -158,6 +190,8 @@ class CPU:
                 print(f"Unkown instruction: {instruction_register}")
                 sys.exit(1)
 
+            # declare a variable and check if that bit is equal to 1 (true/false value)
+            # if it's not true, increment as normal
             instruction_length = ((instruction_register & 0b11000000) >> 6) + 1
             # this also works => instruction_length = (instruction_register >> 6) + 1
             self.program_counter += instruction_length
