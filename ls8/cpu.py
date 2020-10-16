@@ -20,6 +20,9 @@ AND = 0b10101000  # 168
 OR = 0b10101010  # 170
 XOR = 0b10101011  # 171
 NOT = 0b01101001  # 105
+SHL = 0b10101100  # 172
+SHR = 0b10101101  # 173
+MOD = 0b10100100  # 164
 
 
 class CPU:
@@ -53,6 +56,9 @@ class CPU:
         self.dispatch_table[OR] = self.handle_or
         self.dispatch_table[XOR] = self.handle_xor
         self.dispatch_table[NOT] = self.handle_not
+        self.dispatch_table[SHL] = self.handle_shl
+        self.dispatch_table[SHR] = self.handle_shr
+        self.dispatch_table[MOD] = self.handle_mod
 
     def ram_read(self, memory_address_register):
         memory_data_register = self.ram[memory_address_register]
@@ -123,6 +129,10 @@ class CPU:
             self.register[reg_a] = self.register[reg_a] ^ self.register[reg_b]
         elif op == "NOT":
             self.register[reg_a] = ~self.register[reg_a]
+        elif op == "SHL":
+            self.register[reg_a] = self.register[reg_a] << self.register[reg_b]
+        elif op == "SHR":
+            self.register[reg_a] = self.register[reg_a] >> self.register[reg_b]
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -264,6 +274,18 @@ class CPU:
     # NOT (perform a bitwise-NOT on the value in a register, storing the result in the register)
     def handle_not(self, a, b):
         self.alu("NOT", a, b)
+
+    # SHL (shift the value in registerA left by the number of bits specified in registerB, filling the low bits with 0)
+    def handle_shl(self, a, b):
+        self.alu("SHL", a, b)
+
+    # SHR (shift the value in registerA right by the number of bits specified in registerB, filling the high bits with 0)
+    def handle_shr(self, a, b):
+        self.alu("SHR", a, b)
+
+    # MOD (divide the value in the first register by the value in the second, storing the remainder of the result in registerA)
+    def handle_mod(self, a, b):
+        self.alu("MOD", a, b)
 
     def push_value(self, value):
         # decrement the stack pointer
