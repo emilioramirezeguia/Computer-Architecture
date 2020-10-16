@@ -14,6 +14,7 @@ POP = 0b01000110  # 70
 CALL = 0b01010000  # 80
 RET = 0b00010001  # 17
 JMP = 0b01010100  # 84
+JEQ = 0b01010101  # 85
 
 
 class CPU:
@@ -42,6 +43,7 @@ class CPU:
         self.dispatch_table[CALL] = self.handle_call
         self.dispatch_table[RET] = self.handle_ret
         self.dispatch_table[JMP] = self.handle_jmp
+        self.dispatch_table[JEQ] = self.handle_jeq
 
     def ram_read(self, memory_address_register):
         memory_data_register = self.ram[memory_address_register]
@@ -201,6 +203,15 @@ class CPU:
 
         # set it to the program counter and jump to it
         self.program_counter = jump_address
+
+    # JEQ (if equal flag is true, jump to the address in the register)
+    def handle_jeq(self, a, b):
+        # get jump address from the given register
+        jump_address = self.register[a]
+
+        # if the equal flag is set to true, jump to that address
+        if (self.flag & 0b00000001) == 1:
+            self.program_counter = jump_address
 
     def push_value(self, value):
         # decrement the stack pointer
