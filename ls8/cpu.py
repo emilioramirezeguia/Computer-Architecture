@@ -133,6 +133,13 @@ class CPU:
             self.register[reg_a] = self.register[reg_a] << self.register[reg_b]
         elif op == "SHR":
             self.register[reg_a] = self.register[reg_a] >> self.register[reg_b]
+        elif op == "MOD":
+            if self.register[reg_b] == 0:
+                print("Can't divide by 0")
+                sys.exit(1)
+            else:
+                self.register[reg_a] = self.register[reg_a] // self.register[reg_b]
+
         else:
             raise Exception("Unsupported ALU operation")
 
