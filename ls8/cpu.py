@@ -109,18 +109,12 @@ class CPU:
         elif op == "MUL":
             self.register[reg_a] *= self.register[reg_b]
         elif op == "CMP":
-            if self.register[reg_a] == self.register[reg_b]:
-                self.flag = 0b00000001
+            if self.register[reg_a] < self.register[reg_b]:
+                self.flag = 0b00000100
+            elif self.register[reg_a] > self.register[reg_b]:
+                self.flag = 0b00000010
             else:
-                self.flag = 0b00000000
-            # print("Flag BEFORE: ", self.flag)
-            # if self.register[reg_a] < self.register[reg_b]:
-            #     self.flag = 0b00000100
-            # elif self.register[reg_a] > self.register[reg_b]:
-            #     self.flag = 0b00000010
-            # else:
-            #     self.flag = 0b00000001
-            # print("Flag AFTER: ", self.flag)
+                self.flag = 0b00000001
         elif op == "AND":
             self.register[reg_a] = self.register[reg_a] & self.register[reg_b]
         elif op == "OR":
@@ -250,7 +244,7 @@ class CPU:
         jump_address = self.register[a]
 
         # if the equal flag is set to true, jump to that address
-        if self.flag == 1:
+        if (self.flag & 0b00000001) == 0b00000001:
             self.program_counter = jump_address
         else:
             self.program_counter += 2
@@ -261,7 +255,7 @@ class CPU:
         jump_address = self.register[a]
 
         # if the equal flag is set to false, jump to that address
-        if self.flag == 0:
+        if (self.flag & 0b00000001) == 0b00000000:
             self.program_counter = jump_address
         else:
             self.program_counter += 2
