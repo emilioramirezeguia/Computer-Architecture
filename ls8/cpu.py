@@ -5,6 +5,8 @@ import sys
 HLT = 0b00000001  # 1
 LDI = 0b10000010  # 130
 PRN = 0b01000111  # 71
+ADD = 0b10100000  # 160
+SUB = 0b10100001  # 161
 MUL = 0b10100010  # 162
 PUSH = 0b01000101  # 69
 POP = 0b01000110  # 70
@@ -23,10 +25,13 @@ class CPU:
         self.stack_pointer = 7
         self.register[self.stack_pointer] = 0xf4
         self.running = False
+        self.set_instruction = True
         self.dispatch_table = {}
         self.dispatch_table[HLT] = self.handle_hlt
         self.dispatch_table[LDI] = self.handle_ldi
         self.dispatch_table[PRN] = self.handle_prn
+        self.dispatch_table[ADD] = self.handle_add
+        self.dispatch_table[SUB] = self.handle_sub
         self.dispatch_table[MUL] = self.handle_mul
         self.dispatch_table[PUSH] = self.handle_push
         self.dispatch_table[POP] = self.handle_pop
@@ -116,6 +121,14 @@ class CPU:
     def handle_prn(self, a, b):
         print(self.register[a])
 
+    # ADD (add the value in two registers and store the result in registerA.)
+    def handle_add(self, a, b):
+        self.alu("ADD", a, b)
+
+    # SUB (subtract the value in the second register from the first, storing the result in registerA.)
+    def handle_sub(self, a, b):
+        self.alu("SUB", a, b)
+
     # MUL (multiply the values in two registers together and store the result in registerA)
     def handle_mul(self, a, b):
         self.alu("MUL", a, b)
@@ -152,9 +165,17 @@ class CPU:
         self.push_value(return_address)
 
         # get subroutine address from register
+        subroutine_address = self.register[a]
+
+        # jump to it
+        self.program_counter = subroutine_address
 
     def handle_ret(self, a, b):
-        pass
+        # get return address from the top of the stack
+        return_address = self.pop_value()
+
+        # store it in the program counter
+        self.program_counter = return_address
 
     def push_value(self, value):
         # decrement the stack pointer
@@ -164,7 +185,7 @@ class CPU:
         top_of_the_stack_address = self.register[self.stack_pointer]
         self.ram[top_of_the_stack_address] = value
 
-    def pop_value(self, value):
+    def pop_value(self):
         # grab the value from the top of the stack
         top_of_the_stack_address = self.register[self.stack_pointer]
         value = self.ram[top_of_the_stack_address]
@@ -187,11 +208,19 @@ class CPU:
             if instruction_register in self.dispatch_table:
                 self.dispatch_table[instruction_register](operand_a, operand_b)
             else:
-                print(f"Unkown instruction: {instruction_register}")
+                print(
+                    f"Unkown instruction: {instruction_register} at address {self.program_counter}")
                 sys.exit(1)
 
             # declare a variable and check if that bit is equal to 1 (true/false value)
-            # if it's not true, increment as normal
-            instruction_length = ((instruction_register & 0b11000000) >> 6) + 1
-            # this also works => instruction_length = (instruction_register >> 6) + 1
-            self.program_counter += instruction_length
+            set_instruction = ((instruction_register & 0b00010000))
+            if set_instruction != 0:
+                pass
+            # if instruction_register == CALL or instruction_register == RET:
+            #     pass
+            else:
+                # if it's not true, increment as normal
+                instruction_length = (
+                    (instruction_register & 0b11000000) >> 6) + 1
+                # this also works => instruction_length = (instruction_register >> 6) + 1
+                self.program_counter += instruction_length
