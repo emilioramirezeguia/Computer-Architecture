@@ -16,6 +16,8 @@ RET = 0b00010001  # 17
 JMP = 0b01010100  # 84
 JEQ = 0b01010101  # 85
 JNE = 0b01010110  # 86
+AND = 0b10101000  # 168
+OR = 0b10101010  # 170
 
 
 class CPU:
@@ -45,6 +47,8 @@ class CPU:
         self.dispatch_table[JMP] = self.handle_jmp
         self.dispatch_table[JEQ] = self.handle_jeq
         self.dispatch_table[JNE] = self.handle_jne
+        self.dispatch_table[AND] = self.handle_and
+        self.dispatch_table[OR] = self.handle_or
 
     def ram_read(self, memory_address_register):
         memory_data_register = self.ram[memory_address_register]
@@ -107,6 +111,10 @@ class CPU:
             # else:
             #     self.flag = 0b00000001
             # print("Flag AFTER: ", self.flag)
+        elif op == "AND":
+            self.register[reg_a] = self.register[reg_a] & self.register[reg_b]
+        elif op == "OR":
+            self.register[reg_a] = self.register[reg_a] | self.register[reg_b]
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -232,6 +240,14 @@ class CPU:
             self.program_counter = jump_address
         else:
             self.program_counter += 2
+
+    # AND (Bitwise-AND the values in registerA and registerB, then store the result in registerA)
+    def handle_and(self, a, b):
+        self.alu("AND", a, b)
+
+    # OR (perform a bitwise-OR between the values in registerA and registerB, storing the result in registerA)
+    def handle_or(self, a, b):
+        self.alu("OR", a, b)
 
     def push_value(self, value):
         # decrement the stack pointer
