@@ -8,10 +8,21 @@ PRN = 0b01000111  # 71
 ADD = 0b10100000  # 160
 SUB = 0b10100001  # 161
 MUL = 0b10100010  # 162
+CMP = 0b10100111  # 167
 PUSH = 0b01000101  # 69
 POP = 0b01000110  # 70
 CALL = 0b01010000  # 80
 RET = 0b00010001  # 17
+JMP = 0b01010100  # 84
+JEQ = 0b01010101  # 85
+JNE = 0b01010110  # 86
+AND = 0b10101000  # 168
+OR = 0b10101010  # 170
+XOR = 0b10101011  # 171
+NOT = 0b01101001  # 105
+SHL = 0b10101100  # 172
+SHR = 0b10101101  # 173
+MOD = 0b10100100  # 164
 
 
 class CPU:
@@ -23,9 +34,9 @@ class CPU:
         self.register = [0] * 8
         self.program_counter = 0
         self.stack_pointer = 7
+        self.flag = 0b00000000
         self.register[self.stack_pointer] = 0xf4
         self.running = False
-        self.set_instruction = True
         self.dispatch_table = {}
         self.dispatch_table[HLT] = self.handle_hlt
         self.dispatch_table[LDI] = self.handle_ldi
@@ -33,10 +44,21 @@ class CPU:
         self.dispatch_table[ADD] = self.handle_add
         self.dispatch_table[SUB] = self.handle_sub
         self.dispatch_table[MUL] = self.handle_mul
+        self.dispatch_table[CMP] = self.handle_cmp
         self.dispatch_table[PUSH] = self.handle_push
         self.dispatch_table[POP] = self.handle_pop
         self.dispatch_table[CALL] = self.handle_call
         self.dispatch_table[RET] = self.handle_ret
+        self.dispatch_table[JMP] = self.handle_jmp
+        self.dispatch_table[JEQ] = self.handle_jeq
+        self.dispatch_table[JNE] = self.handle_jne
+        self.dispatch_table[AND] = self.handle_and
+        self.dispatch_table[OR] = self.handle_or
+        self.dispatch_table[XOR] = self.handle_xor
+        self.dispatch_table[NOT] = self.handle_not
+        self.dispatch_table[SHL] = self.handle_shl
+        self.dispatch_table[SHR] = self.handle_shr
+        self.dispatch_table[MOD] = self.handle_mod
 
     def ram_read(self, memory_address_register):
         memory_data_register = self.ram[memory_address_register]
@@ -86,6 +108,32 @@ class CPU:
             self.register[reg_a] -= self.register[reg_b]
         elif op == "MUL":
             self.register[reg_a] *= self.register[reg_b]
+        elif op == "CMP":
+            if self.register[reg_a] < self.register[reg_b]:
+                self.flag = 0b00000100
+            elif self.register[reg_a] > self.register[reg_b]:
+                self.flag = 0b00000010
+            else:
+                self.flag = 0b00000001
+        elif op == "AND":
+            self.register[reg_a] = self.register[reg_a] & self.register[reg_b]
+        elif op == "OR":
+            self.register[reg_a] = self.register[reg_a] | self.register[reg_b]
+        elif op == "XOR":
+            self.register[reg_a] = self.register[reg_a] ^ self.register[reg_b]
+        elif op == "NOT":
+            self.register[reg_a] = ~self.register[reg_a]
+        elif op == "SHL":
+            self.register[reg_a] = self.register[reg_a] << self.register[reg_b]
+        elif op == "SHR":
+            self.register[reg_a] = self.register[reg_a] >> self.register[reg_b]
+        elif op == "MOD":
+            if self.register[reg_b] == 0:
+                print("Can't divide by 0")
+                sys.exit(1)
+            else:
+                self.register[reg_a] = self.register[reg_a] // self.register[reg_b]
+
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -97,7 +145,7 @@ class CPU:
 
         print(f"TRACE: %02X | %02X %02X %02X |" % (
             self.program_counter,
-            # self.fl,
+            self.flag,
             # self.ie,
             self.ram_read(self.program_counter),
             self.ram_read(self.program_counter + 1),
@@ -121,11 +169,11 @@ class CPU:
     def handle_prn(self, a, b):
         print(self.register[a])
 
-    # ADD (add the value in two registers and store the result in registerA.)
+    # ADD (add the value in two registers and store the result in registerA)
     def handle_add(self, a, b):
         self.alu("ADD", a, b)
 
-    # SUB (subtract the value in the second register from the first, storing the result in registerA.)
+    # SUB (subtract the value in the second register from the first, storing the result in registerA)
     def handle_sub(self, a, b):
         self.alu("SUB", a, b)
 
@@ -133,7 +181,11 @@ class CPU:
     def handle_mul(self, a, b):
         self.alu("MUL", a, b)
 
-    # PUSH (push the value in the given register on the stack.)
+    # CMP (compare the values in two registers)
+    def handle_cmp(self, a, b):
+        self.alu("CMP", a, b)
+
+    # PUSH (push the value in the given register on the stack)
     def handle_push(self, a, b):
         # decrement the stack pointer
         self.register[self.stack_pointer] -= 1
@@ -170,12 +222,71 @@ class CPU:
         # jump to it
         self.program_counter = subroutine_address
 
+    # RET (return from subroutine)
     def handle_ret(self, a, b):
         # get return address from the top of the stack
         return_address = self.pop_value()
 
         # store it in the program counter
         self.program_counter = return_address
+
+    # JMP (jump to the address stored in the given register)
+    def handle_jmp(self, a, b):
+        # get jump address from the given register
+        jump_address = self.register[a]
+
+        # set it to the program counter and jump to it
+        self.program_counter = jump_address
+
+    # JEQ (if equal flag is true, jump to the address in the register)
+    def handle_jeq(self, a, b):
+        # get jump address from the given register
+        jump_address = self.register[a]
+
+        # if the equal flag is set to true, jump to that address
+        if (self.flag & 0b00000001) == 0b00000001:
+            self.program_counter = jump_address
+        else:
+            self.program_counter += 2
+
+    # JNE (if equal flag is false, jump to the address in the register)
+    def handle_jne(self, a, b):
+        # get jump address from the given register
+        jump_address = self.register[a]
+
+        # if the equal flag is set to false, jump to that address
+        if (self.flag & 0b00000001) == 0b00000000:
+            self.program_counter = jump_address
+        else:
+            self.program_counter += 2
+
+    # AND (Bitwise-AND the values in registerA and registerB, then store the result in registerA)
+    def handle_and(self, a, b):
+        self.alu("AND", a, b)
+
+    # OR (perform a bitwise-OR between the values in registerA and registerB, storing the result in registerA)
+    def handle_or(self, a, b):
+        self.alu("OR", a, b)
+
+    # XOR (perform a bitwise-XOR between the values in registerA and registerB, storing the result in registerA)
+    def handle_xor(self, a, b):
+        self.alu("XOR", a, b)
+
+    # NOT (perform a bitwise-NOT on the value in a register, storing the result in the register)
+    def handle_not(self, a, b):
+        self.alu("NOT", a, b)
+
+    # SHL (shift the value in registerA left by the number of bits specified in registerB, filling the low bits with 0)
+    def handle_shl(self, a, b):
+        self.alu("SHL", a, b)
+
+    # SHR (shift the value in registerA right by the number of bits specified in registerB, filling the high bits with 0)
+    def handle_shr(self, a, b):
+        self.alu("SHR", a, b)
+
+    # MOD (divide the value in the first register by the value in the second, storing the remainder of the result in registerA)
+    def handle_mod(self, a, b):
+        self.alu("MOD", a, b)
 
     def push_value(self, value):
         # decrement the stack pointer
