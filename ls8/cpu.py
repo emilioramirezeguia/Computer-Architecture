@@ -18,6 +18,7 @@ JEQ = 0b01010101  # 85
 JNE = 0b01010110  # 86
 AND = 0b10101000  # 168
 OR = 0b10101010  # 170
+XOR = 0b10101011  # 171
 
 
 class CPU:
@@ -49,6 +50,7 @@ class CPU:
         self.dispatch_table[JNE] = self.handle_jne
         self.dispatch_table[AND] = self.handle_and
         self.dispatch_table[OR] = self.handle_or
+        self.dispatch_table[XOR] = self.handle_xor
 
     def ram_read(self, memory_address_register):
         memory_data_register = self.ram[memory_address_register]
@@ -115,6 +117,8 @@ class CPU:
             self.register[reg_a] = self.register[reg_a] & self.register[reg_b]
         elif op == "OR":
             self.register[reg_a] = self.register[reg_a] | self.register[reg_b]
+        elif op == "XOR":
+            self.register[reg_a] = self.register[reg_a] ^ self.register[reg_b]
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -248,6 +252,10 @@ class CPU:
     # OR (perform a bitwise-OR between the values in registerA and registerB, storing the result in registerA)
     def handle_or(self, a, b):
         self.alu("OR", a, b)
+
+    # XOR (perform a bitwise-XOR between the values in registerA and registerB, storing the result in registerA)
+    def handle_xor(self, a, b):
+        self.alu("XOR", a, b)
 
     def push_value(self, value):
         # decrement the stack pointer
