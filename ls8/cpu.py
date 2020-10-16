@@ -8,11 +8,12 @@ PRN = 0b01000111  # 71
 ADD = 0b10100000  # 160
 SUB = 0b10100001  # 161
 MUL = 0b10100010  # 162
+CMP = 0b10100111  # 167
 PUSH = 0b01000101  # 69
 POP = 0b01000110  # 70
 CALL = 0b01010000  # 80
 RET = 0b00010001  # 17
-CMP = 0b10100111  # 167
+JMP = 0b01010100  # 84
 
 
 class CPU:
@@ -40,6 +41,7 @@ class CPU:
         self.dispatch_table[POP] = self.handle_pop
         self.dispatch_table[CALL] = self.handle_call
         self.dispatch_table[RET] = self.handle_ret
+        self.dispatch_table[JMP] = self.handle_jmp
 
     def ram_read(self, memory_address_register):
         memory_data_register = self.ram[memory_address_register]
@@ -184,12 +186,21 @@ class CPU:
         # jump to it
         self.program_counter = subroutine_address
 
+    # RET (return from subroutine)
     def handle_ret(self, a, b):
         # get return address from the top of the stack
         return_address = self.pop_value()
 
         # store it in the program counter
         self.program_counter = return_address
+
+    # JMP (jump to the address stored in the given register)
+    def handle_jmp(self, a, b):
+        # get jump address from the given register
+        jump_address = self.register[a]
+
+        # set it to the program counter and jump to it
+        self.program_counter = jump_address
 
     def push_value(self, value):
         # decrement the stack pointer
