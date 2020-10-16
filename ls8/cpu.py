@@ -27,10 +27,9 @@ class CPU:
         self.register = [0] * 8
         self.program_counter = 0
         self.stack_pointer = 7
-        self.flag = 00000000
+        self.flag = 0b00000000
         self.register[self.stack_pointer] = 0xf4
         self.running = False
-        self.set_instruction = True
         self.dispatch_table = {}
         self.dispatch_table[HLT] = self.handle_hlt
         self.dispatch_table[LDI] = self.handle_ldi
@@ -96,12 +95,18 @@ class CPU:
         elif op == "MUL":
             self.register[reg_a] *= self.register[reg_b]
         elif op == "CMP":
-            if self.register[reg_a] < self.register[reg_b]:
-                self.flag = (self.flag & 0b00000100)
-            elif self.register[reg_a] > self.register[reg_b]:
-                self.flag = (self.flag & 0b00000010)
+            if self.register[reg_a] == self.register[reg_b]:
+                self.flag = 0b00000001
             else:
-                self.flag = (self.flag & 0b00000001)
+                self.flag = 0b00000000
+            # print("Flag BEFORE: ", self.flag)
+            # if self.register[reg_a] < self.register[reg_b]:
+            #     self.flag = 0b00000100
+            # elif self.register[reg_a] > self.register[reg_b]:
+            #     self.flag = 0b00000010
+            # else:
+            #     self.flag = 0b00000001
+            # print("Flag AFTER: ", self.flag)
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -212,8 +217,10 @@ class CPU:
         jump_address = self.register[a]
 
         # if the equal flag is set to true, jump to that address
-        if (self.flag & 0b00000001) == 1:
+        if self.flag == 1:
             self.program_counter = jump_address
+        else:
+            self.program_counter += 2
 
     # JNE (if equal flag is false, jump to the address in the register)
     def handle_jne(self, a, b):
@@ -221,8 +228,10 @@ class CPU:
         jump_address = self.register[a]
 
         # if the equal flag is set to false, jump to that address
-        if (self.flag & 0b00000001) == 0:
+        if self.flag == 0:
             self.program_counter = jump_address
+        else:
+            self.program_counter += 2
 
     def push_value(self, value):
         # decrement the stack pointer
