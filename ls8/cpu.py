@@ -12,6 +12,7 @@ PUSH = 0b01000101  # 69
 POP = 0b01000110  # 70
 CALL = 0b01010000  # 80
 RET = 0b00010001  # 17
+CMP = 0b10100111  # 167
 
 
 class CPU:
@@ -23,6 +24,7 @@ class CPU:
         self.register = [0] * 8
         self.program_counter = 0
         self.stack_pointer = 7
+        self.flag = 00000000
         self.register[self.stack_pointer] = 0xf4
         self.running = False
         self.set_instruction = True
@@ -33,6 +35,7 @@ class CPU:
         self.dispatch_table[ADD] = self.handle_add
         self.dispatch_table[SUB] = self.handle_sub
         self.dispatch_table[MUL] = self.handle_mul
+        self.dispatch_table[CMP] = self.handle_cmp
         self.dispatch_table[PUSH] = self.handle_push
         self.dispatch_table[POP] = self.handle_pop
         self.dispatch_table[CALL] = self.handle_call
@@ -86,6 +89,13 @@ class CPU:
             self.register[reg_a] -= self.register[reg_b]
         elif op == "MUL":
             self.register[reg_a] *= self.register[reg_b]
+        elif op == "CMP":
+            if self.register[reg_a] < self.register[reg_b]:
+                self.flag = (self.flag & 0b00000100)
+            elif self.register[reg_a] > self.register[reg_b]:
+                self.flag = (self.flag & 0b00000010)
+            else:
+                self.flag = (self.flag & 0b00000001)
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -121,11 +131,11 @@ class CPU:
     def handle_prn(self, a, b):
         print(self.register[a])
 
-    # ADD (add the value in two registers and store the result in registerA.)
+    # ADD (add the value in two registers and store the result in registerA)
     def handle_add(self, a, b):
         self.alu("ADD", a, b)
 
-    # SUB (subtract the value in the second register from the first, storing the result in registerA.)
+    # SUB (subtract the value in the second register from the first, storing the result in registerA)
     def handle_sub(self, a, b):
         self.alu("SUB", a, b)
 
@@ -133,7 +143,11 @@ class CPU:
     def handle_mul(self, a, b):
         self.alu("MUL", a, b)
 
-    # PUSH (push the value in the given register on the stack.)
+    # CMP (compare the values in two registers)
+    def handle_cmp(self, a, b):
+        self.alu("CMP", a, b)
+
+    # PUSH (push the value in the given register on the stack)
     def handle_push(self, a, b):
         # decrement the stack pointer
         self.register[self.stack_pointer] -= 1
